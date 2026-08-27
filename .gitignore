@@ -5,3 +5,5 @@ attendance.db
 exports/
 *.zip
 .env
+
+*.db
