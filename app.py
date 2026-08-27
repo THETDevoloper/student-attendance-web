@@ -13,10 +13,13 @@ from flask import (
     send_file,
 )
 
+from sqlalchemy.exc import IntegrityError
+
 from database import (
     SessionLocal,
     Student,
     Attendance,
+    DailyAttendance,
     init_db,
 )
 
@@ -175,12 +178,48 @@ def dashboard():
             Attendance.status == "Present"
         ).count()
 
+        # -------------------------------------------------
+        # Daily Attendance statistics
+        # -------------------------------------------------
+
+        daily_present_count = db.query(
+            DailyAttendance
+        ).filter(
+            DailyAttendance.attendance_date == today,
+            DailyAttendance.status == "Present"
+        ).count()
+
+        daily_absent_count = db.query(
+            DailyAttendance
+        ).filter(
+            DailyAttendance.attendance_date == today,
+            DailyAttendance.status == "Absent"
+        ).count()
+
+        daily_late_count = db.query(
+            DailyAttendance
+        ).filter(
+            DailyAttendance.attendance_date == today,
+            DailyAttendance.status == "Late"
+        ).count()
+
         return render_template(
             "dashboard.html",
+
             student_count=student_count,
+
             attendance_count=attendance_count,
+
             checkout_count=checkout_count,
-            present_count=present_count
+
+            present_count=present_count,
+
+            daily_present_count=daily_present_count,
+
+            daily_absent_count=daily_absent_count,
+
+            daily_late_count=daily_late_count,
+
         )
 
     finally:
@@ -327,6 +366,7 @@ def add_student():
             )
 
             db.add(student)
+
             db.commit()
 
             flash(
@@ -389,6 +429,7 @@ def delete_student(student_id):
         if student:
 
             db.delete(student)
+
             db.commit()
 
             flash(
@@ -502,6 +543,7 @@ def check_in():
             )
 
             db.add(attendance)
+
             db.commit()
 
             flash(
@@ -603,6 +645,7 @@ def check_out():
             now = datetime.now()
 
             attendance.check_out_time = now
+
             attendance.status = "Completed"
 
             db.commit()
@@ -701,6 +744,317 @@ def attendance():
 
 
 # =========================================================
+# DAILY ATTENDANCE
+# =========================================================
+# New feature
+#
+# URL:
+# /daily-attendance
+#
+# Allows teacher to select a date and mark:
+#
+# Present
+# Absent
+# Late
+#
+# Each student can have only one record per date.
+# =========================================================
+
+@app.route(
+    "/daily-attendance",
+    methods=["GET", "POST"]
+)
+def daily_attendance():
+
+    if not login_required():
+
+        return redirect(
+            url_for("login")
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        # -------------------------------------------------
+        # Get selected date
+        # -------------------------------------------------
+
+        selected_date_text = request.values.get(
+            "date",
+            ""
+        ).strip()
+
+        if selected_date_text:
+
+            try:
+
+                selected_date = datetime.strptime(
+                    selected_date_text,
+                    "%Y-%m-%d"
+                ).date()
+
+            except ValueError:
+
+                flash(
+                    "Invalid date.",
+                    "error"
+                )
+
+                selected_date = date.today()
+
+        else:
+
+            selected_date = date.today()
+
+        # -------------------------------------------------
+        # SAVE DAILY ATTENDANCE
+        # -------------------------------------------------
+
+        if request.method == "POST":
+
+            students_list = db.query(
+                Student
+            ).order_by(
+                Student.name
+            ).all()
+
+            for student in students_list:
+
+                status = request.form.get(
+                    f"status_{student.id}",
+                    "Present"
+                ).strip()
+
+                note = request.form.get(
+                    f"note_{student.id}",
+                    ""
+                ).strip()
+
+                # Safety validation
+                if status not in [
+                    "Present",
+                    "Absent",
+                    "Late"
+                ]:
+
+                    status = "Present"
+
+                existing = db.query(
+                    DailyAttendance
+                ).filter(
+                    DailyAttendance.student_id == student.id,
+                    DailyAttendance.attendance_date == selected_date
+                ).first()
+
+                if existing:
+
+                    existing.status = status
+
+                    existing.note = note
+
+                    existing.updated_at = datetime.now()
+
+                else:
+
+                    record = DailyAttendance(
+                        student_id=student.id,
+                        attendance_date=selected_date,
+                        status=status,
+                        note=note
+                    )
+
+                    db.add(record)
+
+            try:
+
+                db.commit()
+
+                flash(
+                    f"Attendance for "
+                    f"{selected_date.strftime('%d/%m/%Y')} "
+                    "saved successfully.",
+                    "success"
+                )
+
+            except IntegrityError:
+
+                db.rollback()
+
+                flash(
+                    "Some attendance records already exist. "
+                    "Please refresh and try again.",
+                    "error"
+                )
+
+            return redirect(
+                url_for(
+                    "daily_attendance",
+                    date=selected_date.strftime(
+                        "%Y-%m-%d"
+                    )
+                )
+            )
+
+        # -------------------------------------------------
+        # LOAD STUDENTS
+        # -------------------------------------------------
+
+        students_list = db.query(
+            Student
+        ).order_by(
+            Student.name
+        ).all()
+
+        # -------------------------------------------------
+        # LOAD EXISTING DAILY ATTENDANCE
+        # -------------------------------------------------
+
+        existing_records = db.query(
+            DailyAttendance
+        ).filter(
+            DailyAttendance.attendance_date == selected_date
+        ).all()
+
+        attendance_map = {
+            record.student_id: record
+            for record in existing_records
+        }
+
+        # -------------------------------------------------
+        # STATISTICS
+        # -------------------------------------------------
+
+        present_count = sum(
+            1
+            for record in existing_records
+            if record.status == "Present"
+        )
+
+        absent_count = sum(
+            1
+            for record in existing_records
+            if record.status == "Absent"
+        )
+
+        late_count = sum(
+            1
+            for record in existing_records
+            if record.status == "Late"
+        )
+
+        marked_count = len(
+            existing_records
+        )
+
+        total_students = len(
+            students_list
+        )
+
+        unmarked_count = max(
+            total_students - marked_count,
+            0
+        )
+
+        return render_template(
+            "daily_attendance.html",
+
+            students=students_list,
+
+            selected_date=selected_date,
+
+            attendance_map=attendance_map,
+
+            present_count=present_count,
+
+            absent_count=absent_count,
+
+            late_count=late_count,
+
+            marked_count=marked_count,
+
+            unmarked_count=unmarked_count,
+
+            total_students=total_students,
+        )
+
+    finally:
+
+        db.close()
+
+
+# =========================================================
+# DAILY ATTENDANCE HISTORY
+# =========================================================
+
+@app.route(
+    "/daily-attendance/history"
+)
+def daily_attendance_history():
+
+    if not login_required():
+
+        return redirect(
+            url_for("login")
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        records = db.query(
+            DailyAttendance,
+            Student
+        ).join(
+            Student,
+            DailyAttendance.student_id == Student.id
+        ).order_by(
+            DailyAttendance.attendance_date.desc(),
+            Student.name
+        ).all()
+
+        # Group by date
+        grouped = {}
+
+        for record, student in records:
+
+            day = record.attendance_date
+
+            if day not in grouped:
+
+                grouped[day] = {
+                    "present": 0,
+                    "absent": 0,
+                    "late": 0,
+                    "total": 0,
+                }
+
+            grouped[day]["total"] += 1
+
+            if record.status == "Present":
+
+                grouped[day]["present"] += 1
+
+            elif record.status == "Absent":
+
+                grouped[day]["absent"] += 1
+
+            elif record.status == "Late":
+
+                grouped[day]["late"] += 1
+
+        return render_template(
+            "daily_attendance_history.html",
+            grouped=grouped,
+            records=records
+        )
+
+    finally:
+
+        db.close()
+
+
+# =========================================================
 # REPORTS
 # =========================================================
 
@@ -741,6 +1095,7 @@ def reports():
     )
 
     grand_total = 0
+
     student_totals = {}
 
     for attendance_record, student in records:
@@ -766,14 +1121,23 @@ def reports():
 
     return render_template(
         "reports.html",
+
         records=records,
+
         student_search=student_search,
+
         from_text=from_text,
+
         to_text=to_text,
+
         selected_status=selected_status,
+
         grand_total=grand_total,
+
         student_totals=student_totals,
+
         calculate_hours=calculate_hours,
+
         format_hours=format_hours
     )
 
@@ -881,7 +1245,9 @@ def get_filtered_records(
 # EXPORT CSV
 # =========================================================
 
-@app.route("/reports/export/csv")
+@app.route(
+    "/reports/export/csv"
+)
 def export_report_csv():
 
     if not login_required():
@@ -955,7 +1321,9 @@ def export_report_csv():
 # EXPORT PDF
 # =========================================================
 
-@app.route("/reports/export/pdf")
+@app.route(
+    "/reports/export/pdf"
+)
 def export_report_pdf():
 
     if not login_required():
@@ -1033,11 +1401,13 @@ if __name__ == "__main__":
 
     app.run(
         host="0.0.0.0",
+
         port=int(
             os.environ.get(
                 "PORT",
                 5000
             )
         ),
+
         debug=True
     )

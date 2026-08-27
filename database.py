@@ -7,7 +7,9 @@ from sqlalchemy import (
     Integer,
     String,
     DateTime,
+    Date,
     ForeignKey,
+    UniqueConstraint,
 )
 
 from sqlalchemy.orm import (
@@ -26,6 +28,7 @@ DATABASE_URL = os.environ.get(
     "sqlite:///attendance.db"
 )
 
+# Render PostgreSQL URL compatibility
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace(
         "postgres://",
@@ -33,6 +36,8 @@ if DATABASE_URL.startswith("postgres://"):
         1
     )
 
+
+# SQLite configuration
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(
         DATABASE_URL,
@@ -95,15 +100,26 @@ class Student(Base):
         nullable=True
     )
 
+    # Old Check In / Check Out relationship
     attendances = relationship(
         "Attendance",
         back_populates="student",
         cascade="all, delete-orphan"
     )
 
+    # New Daily Attendance relationship
+    daily_attendances = relationship(
+        "DailyAttendance",
+        back_populates="student",
+        cascade="all, delete-orphan"
+    )
+
 
 # =========================================================
-# ATTENDANCE MODEL
+# OLD ATTENDANCE MODEL
+# =========================================================
+# This model is kept unchanged so your existing
+# Check In / Check Out system continues to work.
 # =========================================================
 
 class Attendance(Base):
@@ -146,6 +162,80 @@ class Attendance(Base):
 
 
 # =========================================================
+# DAILY ATTENDANCE MODEL
+# =========================================================
+# Used for:
+#
+# Present
+# Absent
+# Late
+#
+# One student can have only ONE daily attendance
+# record for the same date.
+# =========================================================
+
+class DailyAttendance(Base):
+
+    __tablename__ = "daily_attendance"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        autoincrement=True
+    )
+
+    student_id = Column(
+        Integer,
+        ForeignKey("students.id"),
+        nullable=False
+    )
+
+    attendance_date = Column(
+        Date,
+        nullable=False
+    )
+
+    status = Column(
+        String(20),
+        nullable=False,
+        default="Present"
+    )
+
+    note = Column(
+        String(500),
+        nullable=True
+    )
+
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.now
+    )
+
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.now,
+        onupdate=datetime.now
+    )
+
+    student = relationship(
+        "Student",
+        back_populates="daily_attendances"
+    )
+
+    # Prevent duplicate attendance for the same
+    # student on the same date.
+    __table_args__ = (
+        UniqueConstraint(
+            "student_id",
+            "attendance_date",
+            name="uq_student_daily_attendance"
+        ),
+    )
+
+
+# =========================================================
 # INITIALIZE DATABASE
 # =========================================================
 
@@ -155,6 +245,10 @@ def init_db():
         bind=engine
     )
 
+
+# =========================================================
+# TEST / INITIALIZE
+# =========================================================
 
 if __name__ == "__main__":
 
