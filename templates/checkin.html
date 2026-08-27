@@ -1,67 +1,129 @@
 {% extends "base.html" %}
 
+{% block title %}
+Check In - Student Attendance
+{% endblock %}
+
+{% block page_title %}
+Check In
+{% endblock %}
+
 {% block content %}
 
-<div class="center-card">
+<div class="page-header">
 
-    <h1>
-        ✅ Student Check In
-    </h1>
+    <div>
 
-    {% if not students %}
+        <h2>
+            Student Check In
+        </h2>
 
-        <div class="empty">
-            No students found.
-            Please add a student first.
+        <p>
+            Record the arrival time of a student.
+        </p>
+
+    </div>
+
+    <div class="current-time" id="clock">
+        --:--:--
+    </div>
+
+</div>
+
+
+<div class="attendance-layout">
+
+    <div class="card attendance-action-card">
+
+        <div class="large-action-icon checkin">
+            ✅
         </div>
 
-    {% else %}
+        <h2>
+            Check In Student
+        </h2>
 
-    <form
-        method="POST"
-        class="attendance-form"
-    >
+        <p>
+            Select a student and press Check In.
+        </p>
 
-        <label>
-            Select Student
-        </label>
 
-        <select
-            name="student_id"
-            required
+        <form
+            method="POST"
+            class="attendance-form"
         >
 
-            {% for student in students %}
+            <label>
+                Select Student
+            </label>
 
-            <option value="{{ student.id }}">
+            <select
+                name="student_id"
+                required
+            >
 
-                {{ student.student_id }}
-                -
-                {{ student.name }}
+                <option value="">
+                    -- Select Student --
+                </option>
 
-            </option>
+                {% for student in students %}
 
-            {% endfor %}
+                <option value="{{ student.student_id }}">
 
-        </select>
+                    {{ student.student_id }}
+                    —
+                    {{ student.name }}
+
+                </option>
+
+                {% endfor %}
+
+            </select>
 
 
-        <div
-            id="clock"
-            class="clock"
-        ></div>
+            <button
+                type="submit"
+                class="btn btn-success btn-large"
+            >
+                ✅ Check In
+            </button>
+
+        </form>
+
+    </div>
 
 
-        <button
-            type="submit"
-            class="success-button large"
-        >
-            ✅ CHECK IN
-        </button>
+    <div class="card info-card">
 
-    </form>
+        <div class="info-icon">
+            ℹ️
+        </div>
 
-    {% endif %}
+        <h3>
+            How it works
+        </h3>
+
+        <ul>
+
+            <li>
+                Select the student from the list.
+            </li>
+
+            <li>
+                Click the Check In button.
+            </li>
+
+            <li>
+                The current date and time will be recorded.
+            </li>
+
+            <li>
+                A student cannot check in twice without checking out.
+            </li>
+
+        </ul>
+
+    </div>
 
 </div>
 
@@ -70,11 +132,18 @@
 
 function updateClock() {
 
-    const now = new Date();
+    const clock =
+        document.getElementById("clock");
 
-    document.getElementById(
-        "clock"
-    ).innerText = now.toLocaleString();
+    if (!clock) {
+        return;
+    }
+
+    const now =
+        new Date();
+
+    clock.textContent =
+        now.toLocaleTimeString();
 
 }
 

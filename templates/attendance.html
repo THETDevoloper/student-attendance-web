@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
 {% block title %}
-Students - Student Attendance
+Attendance - Student Attendance
 {% endblock %}
 
 {% block page_title %}
-Students
+Attendance
 {% endblock %}
 
 {% block content %}
@@ -15,21 +15,14 @@ Students
     <div>
 
         <h2>
-            Student Management
+            Attendance Records
         </h2>
 
         <p>
-            Add, search and manage student information.
+            View all student attendance history.
         </p>
 
     </div>
-
-    <a
-        href="{{ url_for('add_student') }}"
-        class="btn btn-primary"
-    >
-        + Add Student
-    </a>
 
 </div>
 
@@ -51,7 +44,7 @@ Students
                 type="text"
                 name="search"
                 value="{{ search }}"
-                placeholder="Search by Student ID or Name..."
+                placeholder="Search Student ID or Name..."
             >
 
         </div>
@@ -65,12 +58,12 @@ Students
 
         {% if search %}
 
-            <a
-                href="{{ url_for('students') }}"
-                class="btn btn-light"
-            >
-                Clear
-            </a>
+        <a
+            href="{{ url_for('attendance') }}"
+            class="btn btn-light"
+        >
+            Clear
+        </a>
 
         {% endif %}
 
@@ -86,11 +79,11 @@ Students
         <div>
 
             <h3>
-                Students
+                Attendance History
             </h3>
 
             <span>
-                {{ students|length }} student(s)
+                {{ records|length }} record(s)
             </span>
 
         </div>
@@ -98,7 +91,7 @@ Students
     </div>
 
 
-    {% if students %}
+    {% if records %}
 
     <div class="table-wrapper">
 
@@ -109,10 +102,6 @@ Students
                 <tr>
 
                     <th>
-                        #
-                    </th>
-
-                    <th>
                         Student ID
                     </th>
 
@@ -121,19 +110,19 @@ Students
                     </th>
 
                     <th>
-                        Gender
+                        Check In
                     </th>
 
                     <th>
-                        Phone
+                        Check Out
                     </th>
 
                     <th>
-                        Email
+                        Status
                     </th>
 
                     <th>
-                        Action
+                        Total
                     </th>
 
                 </tr>
@@ -142,13 +131,9 @@ Students
 
             <tbody>
 
-                {% for student in students %}
+                {% for attendance_record, student in records %}
 
                 <tr>
-
-                    <td>
-                        {{ loop.index }}
-                    </td>
 
                     <td>
                         <strong>
@@ -161,34 +146,51 @@ Students
                     </td>
 
                     <td>
-                        {{ student.gender or "-" }}
-                    </td>
-
-                    <td>
-                        {{ student.phone or "-" }}
-                    </td>
-
-                    <td>
-                        {{ student.email or "-" }}
+                        {{ attendance_record.check_in_time.strftime('%d/%m/%Y %I:%M:%S %p') }}
                     </td>
 
                     <td>
 
-                        <form
-                            method="POST"
-                            action="{{ url_for('delete_student', student_id=student.id) }}"
-                            onsubmit="return confirm('Delete this student?');"
-                        >
+                        {% if attendance_record.check_out_time %}
 
-                            <button
-                                type="submit"
-                                class="btn-icon danger"
-                                title="Delete"
-                            >
-                                🗑️
-                            </button>
+                            {{ attendance_record.check_out_time.strftime('%d/%m/%Y %I:%M:%S %p') }}
 
-                        </form>
+                        {% else %}
+
+                            <span class="muted">
+                                Not checked out
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {% if attendance_record.status == "Completed" %}
+
+                            <span class="badge completed">
+                                Completed
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge present">
+                                Present
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {{ format_hours(
+                            calculate_hours(
+                                attendance_record.check_in_time,
+                                attendance_record.check_out_time
+                            )
+                        ) }}
 
                     </td>
 
@@ -207,23 +209,16 @@ Students
     <div class="empty-state">
 
         <div>
-            👨‍🎓
+            📋
         </div>
 
         <h3>
-            No students found
+            No attendance records
         </h3>
 
         <p>
-            Add your first student to get started.
+            Attendance records will appear here.
         </p>
-
-        <a
-            href="{{ url_for('add_student') }}"
-            class="btn btn-primary"
-        >
-            + Add Student
-        </a>
 
     </div>
 

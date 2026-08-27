@@ -1,50 +1,101 @@
+import os
 from datetime import datetime
 
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    create_engine,
+    Column,
+    Integer,
+    String,
+    DateTime,
+    ForeignKey,
+)
 
-
-db = SQLAlchemy()
+from sqlalchemy.orm import (
+    declarative_base,
+    sessionmaker,
+    relationship,
+)
 
 
 # =========================================================
-# STUDENT
+# DATABASE CONFIG
 # =========================================================
 
-class Student(db.Model):
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "sqlite:///attendance.db"
+)
+
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace(
+        "postgres://",
+        "postgresql://",
+        1
+    )
+
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={
+            "check_same_thread": False
+        }
+    )
+else:
+    engine = create_engine(
+        DATABASE_URL
+    )
+
+
+SessionLocal = sessionmaker(
+    bind=engine,
+    autoflush=False,
+    autocommit=False
+)
+
+Base = declarative_base()
+
+
+# =========================================================
+# STUDENT MODEL
+# =========================================================
+
+class Student(Base):
 
     __tablename__ = "students"
 
-    id = db.Column(
-        db.Integer,
-        primary_key=True
+    id = Column(
+        Integer,
+        primary_key=True,
+        autoincrement=True
     )
 
-    student_id = db.Column(
-        db.String(50),
+    student_id = Column(
+        String(50),
         unique=True,
         nullable=False
     )
 
-    name = db.Column(
-        db.String(100),
+    name = Column(
+        String(200),
         nullable=False
     )
 
-    gender = db.Column(
-        db.String(20)
+    gender = Column(
+        String(20),
+        nullable=True
     )
 
-    phone = db.Column(
-        db.String(30)
+    phone = Column(
+        String(50),
+        nullable=True
     )
 
-    email = db.Column(
-        db.String(100)
+    email = Column(
+        String(200),
+        nullable=True
     )
 
-    attendance_records = relationship(
+    attendances = relationship(
         "Attendance",
         back_populates="student",
         cascade="all, delete-orphan"
@@ -52,42 +103,63 @@ class Student(db.Model):
 
 
 # =========================================================
-# ATTENDANCE
+# ATTENDANCE MODEL
 # =========================================================
 
-class Attendance(db.Model):
+class Attendance(Base):
 
     __tablename__ = "attendance"
 
-    id = db.Column(
-        db.Integer,
-        primary_key=True
+    id = Column(
+        Integer,
+        primary_key=True,
+        autoincrement=True
     )
 
-    student_id = db.Column(
-        db.Integer,
+    student_id = Column(
+        Integer,
         ForeignKey("students.id"),
         nullable=False
     )
 
-    check_in_time = db.Column(
-        db.DateTime,
+    check_in_time = Column(
+        DateTime,
         nullable=False,
         default=datetime.now
     )
 
-    check_out_time = db.Column(
-        db.DateTime,
+    check_out_time = Column(
+        DateTime,
         nullable=True
     )
 
-    status = db.Column(
-        db.String(20),
+    status = Column(
+        String(30),
         nullable=False,
         default="Present"
     )
 
     student = relationship(
         "Student",
-        back_populates="attendance_records"
+        back_populates="attendances"
+    )
+
+
+# =========================================================
+# INITIALIZE DATABASE
+# =========================================================
+
+def init_db():
+
+    Base.metadata.create_all(
+        bind=engine
+    )
+
+
+if __name__ == "__main__":
+
+    init_db()
+
+    print(
+        "Database initialized successfully."
     )

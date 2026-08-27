@@ -1,79 +1,147 @@
 {% extends "base.html" %}
 
+{% block title %}
+Check Out - Student Attendance
+{% endblock %}
+
+{% block page_title %}
+Check Out
+{% endblock %}
+
 {% block content %}
 
-<div class="center-card">
+<div class="page-header">
 
-    <h1>
-        🚪 Student Check Out
-    </h1>
+    <div>
+
+        <h2>
+            Student Check Out
+        </h2>
+
+        <p>
+            Record the departure time of a student.
+        </p>
+
+    </div>
+
+    <div class="current-time" id="clock">
+        --:--:--
+    </div>
+
+</div>
 
 
-    {% if not records %}
+<div class="attendance-layout">
 
-        <div class="empty">
+    <div class="card attendance-action-card">
 
-            No students available for Check Out.
+        <div class="large-action-icon checkout">
+            🚪
+        </div>
 
-            <br><br>
+        <h2>
+            Check Out Student
+        </h2>
 
-            Students must Check In first.
+        <p>
+            Select a student who is currently checked in.
+        </p>
+
+
+        <form
+            method="POST"
+            class="attendance-form"
+        >
+
+            <label>
+                Select Student
+            </label>
+
+            <select
+                name="student_id"
+                required
+            >
+
+                <option value="">
+                    -- Select Student --
+                </option>
+
+                {% for student in students %}
+
+                <option value="{{ student.student_id }}">
+
+                    {{ student.student_id }}
+                    —
+                    {{ student.name }}
+
+                </option>
+
+                {% endfor %}
+
+            </select>
+
+
+            <button
+                type="submit"
+                class="btn btn-warning btn-large"
+            >
+                🚪 Check Out
+            </button>
+
+        </form>
+
+    </div>
+
+
+    <div class="card info-card">
+
+        <div class="info-icon">
+            ⏱️
+        </div>
+
+        <h3>
+            Currently Checked In
+        </h3>
+
+        <div class="open-students">
+
+            {% if students %}
+
+                {% for student in students %}
+
+                <div class="student-pill">
+
+                    <span class="avatar-small">
+                        {{ student.name[0]|upper }}
+                    </span>
+
+                    <div>
+
+                        <strong>
+                            {{ student.name }}
+                        </strong>
+
+                        <small>
+                            {{ student.student_id }}
+                        </small>
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <p class="muted">
+                    No students are currently checked in.
+                </p>
+
+            {% endif %}
 
         </div>
 
-    {% else %}
-
-    <form
-        method="POST"
-        class="attendance-form"
-    >
-
-        <label>
-            Select Student
-        </label>
-
-        <select
-            name="student_id"
-            required
-        >
-
-            {% for attendance, student in records %}
-
-            <option value="{{ student.id }}">
-
-                {{ student.student_id }}
-                -
-                {{ student.name }}
-
-                —
-                Check In:
-                {{ attendance.check_in_time.strftime(
-                    "%I:%M %p"
-                ) }}
-
-            </option>
-
-            {% endfor %}
-
-        </select>
-
-
-        <div
-            id="clock"
-            class="clock"
-        ></div>
-
-
-        <button
-            type="submit"
-            class="danger-button large"
-        >
-            🚪 CHECK OUT
-        </button>
-
-    </form>
-
-    {% endif %}
+    </div>
 
 </div>
 
@@ -82,11 +150,15 @@
 
 function updateClock() {
 
-    const now = new Date();
+    const clock =
+        document.getElementById("clock");
 
-    document.getElementById(
-        "clock"
-    ).innerText = now.toLocaleString();
+    if (!clock) {
+        return;
+    }
+
+    clock.textContent =
+        new Date().toLocaleTimeString();
 
 }
 

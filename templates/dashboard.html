@@ -1,93 +1,262 @@
 {% extends "base.html" %}
 
+{% block title %}
+Dashboard - Student Attendance
+{% endblock %}
+
+{% block page_title %}
+Dashboard
+{% endblock %}
+
 {% block content %}
 
-<h1>
-    🏠 Dashboard
-</h1>
+<div class="welcome-card">
 
-<p class="subtitle">
-    Manage students and attendance easily
-</p>
+    <div>
+
+        <span class="eyebrow">
+            STUDENT ATTENDANCE
+        </span>
+
+        <h2>
+            Welcome back, Administrator 👋
+        </h2>
+
+        <p>
+            Manage students, check-ins, check-outs,
+            attendance and reports from one place.
+        </p>
+
+    </div>
+
+    <div class="welcome-icon">
+        📊
+    </div>
+
+</div>
 
 
-<div class="cards">
+<div class="stats-grid">
 
-    <div class="card">
+    <div class="stat-card">
 
-        <div class="card-icon">
+        <div class="stat-icon blue">
             👨‍🎓
         </div>
 
         <div>
-            Students
-        </div>
 
-        <strong>
-            {{ student_count }}
-        </strong>
+            <span>
+                Total Students
+            </span>
+
+            <strong>
+                {{ student_count }}
+            </strong>
+
+        </div>
 
     </div>
 
 
-    <div class="card">
+    <div class="stat-card">
 
-        <div class="card-icon">
+        <div class="stat-icon green">
             ✅
         </div>
 
         <div>
-            Check Ins Today
-        </div>
 
-        <strong>
-            {{ attendance_count }}
-        </strong>
+            <span>
+                Today's Check In
+            </span>
+
+            <strong>
+                {{ attendance_count }}
+            </strong>
+
+        </div>
 
     </div>
 
 
-    <div class="card">
+    <div class="stat-card">
 
-        <div class="card-icon">
+        <div class="stat-icon orange">
             🚪
         </div>
 
         <div>
-            Checked Out
+
+            <span>
+                Today's Check Out
+            </span>
+
+            <strong>
+                {{ checkout_count }}
+            </strong>
+
         </div>
 
-        <strong>
-            {{ checkout_count }}
-        </strong>
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-icon purple">
+            📌
+        </div>
+
+        <div>
+
+            <span>
+                Present
+            </span>
+
+            <strong>
+                {{ present_count }}
+            </strong>
+
+        </div>
 
     </div>
 
 </div>
 
 
-<div class="quick-actions">
+<div class="quick-section">
 
-    <a
-        href="{{ url_for('checkin') }}"
-        class="big-button"
-    >
-        ✅ Check In
-    </a>
+    <div class="section-heading">
 
-    <a
-        href="{{ url_for('checkout') }}"
-        class="big-button"
-    >
-        🚪 Check Out
-    </a>
+        <div>
 
-    <a
-        href="{{ url_for('reports') }}"
-        class="big-button"
-    >
-        📊 Reports
-    </a>
+            <h2>
+                Quick Actions
+            </h2>
+
+            <p>
+                Frequently used attendance actions
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="quick-grid">
+
+        <a
+            href="{{ url_for('check_in') }}"
+            class="quick-card checkin-card"
+        >
+
+            <div class="quick-icon">
+                ✅
+            </div>
+
+            <div>
+
+                <h3>
+                    Check In
+                </h3>
+
+                <p>
+                    Record student arrival
+                </p>
+
+            </div>
+
+            <span class="arrow">
+                →
+            </span>
+
+        </a>
+
+
+        <a
+            href="{{ url_for('check_out') }}"
+            class="quick-card checkout-card"
+        >
+
+            <div class="quick-icon">
+                🚪
+            </div>
+
+            <div>
+
+                <h3>
+                    Check Out
+                </h3>
+
+                <p>
+                    Record student departure
+                </p>
+
+            </div>
+
+            <span class="arrow">
+                →
+            </span>
+
+        </a>
+
+
+        <a
+            href="{{ url_for('students') }}"
+            class="quick-card"
+        >
+
+            <div class="quick-icon">
+                👨‍🎓
+            </div>
+
+            <div>
+
+                <h3>
+                    Students
+                </h3>
+
+                <p>
+                    Manage student records
+                </p>
+
+            </div>
+
+            <span class="arrow">
+                →
+            </span>
+
+        </a>
+
+
+        <a
+            href="{{ url_for('reports') }}"
+            class="quick-card"
+        >
+
+            <div class="quick-icon">
+                📈
+            </div>
+
+            <div>
+
+                <h3>
+                    Reports
+                </h3>
+
+                <p>
+                    View attendance reports
+                </p>
+
+            </div>
+
+            <span class="arrow">
+                →
+            </span>
+
+        </a>
+
+    </div>
 
 </div>
 

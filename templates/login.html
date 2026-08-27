@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 
 <head>
@@ -11,9 +10,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>
-        Login - Student Attendance
-    </title>
+    <title>Login - Student Attendance</title>
 
     <link
         rel="stylesheet"
@@ -26,7 +23,7 @@
 
 <div class="login-card">
 
-    <div class="login-icon">
+    <div class="login-logo">
         🎓
     </div>
 
@@ -34,55 +31,85 @@
         Student Attendance
     </h1>
 
-    <p>
-        Login to continue
+    <p class="login-subtitle">
+        Management System
     </p>
+
 
     {% with messages = get_flashed_messages(
         with_categories=true
     ) %}
 
-        {% for category, message in messages %}
+        {% if messages %}
 
-            <div class="alert {{ category }}">
-                {{ message }}
-            </div>
+            {% for category, message in messages %}
 
-        {% endfor %}
+                <div class="flash {{ category }}">
+                    {{ message }}
+                </div>
+
+            {% endfor %}
+
+        {% endif %}
 
     {% endwith %}
 
-    <form method="POST">
+
+    <form
+        method="POST"
+        class="login-form"
+    >
+
+        <label>
+            Username
+        </label>
 
         <input
             type="text"
             name="username"
-            placeholder="Username"
+            placeholder="Enter username"
             required
+            autofocus
         >
+
+
+        <label>
+            Password
+        </label>
 
         <input
             type="password"
             name="password"
-            placeholder="Password"
+            placeholder="Enter password"
             required
         >
 
+
         <button
             type="submit"
-            class="primary-button"
+            class="btn btn-primary btn-full"
         >
-            🔐 LOGIN
+            Sign In
         </button>
 
     </form>
 
-    <div class="login-help">
-        Default: <b>admin / 1234</b>
+
+    <div class="login-hint">
+
+        <strong>Demo Login</strong>
+
+        <span>
+            Username: admin
+        </span>
+
+        <span>
+            Password: 1234
+        </span>
+
     </div>
 
 </div>
 
 </body>
-
 </html>

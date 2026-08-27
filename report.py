@@ -1,35 +1,37 @@
 import csv
-import os
-
-from datetime import datetime
 
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import (
     SimpleDocTemplate,
     Table,
     TableStyle,
     Paragraph,
-    Spacer
+    Spacer,
 )
-from reportlab.lib.units import mm
 
 
 # =========================================================
 # CALCULATE HOURS
 # =========================================================
 
-def calculate_hours(check_in, check_out):
+def calculate_hours(
+    check_in,
+    check_out
+):
 
     if not check_in or not check_out:
-        return 0.0
+        return 0
 
     seconds = (
         check_out - check_in
     ).total_seconds()
 
-    return seconds / 3600
+    return max(
+        0,
+        seconds / 3600
+    )
 
 
 # =========================================================
@@ -38,21 +40,30 @@ def calculate_hours(check_in, check_out):
 
 def format_hours(hours):
 
+    if hours is None:
+        return "0h 0m"
+
     total_minutes = int(
         round(hours * 60)
     )
 
-    h = total_minutes // 60
-    m = total_minutes % 60
+    hours_part = total_minutes // 60
+    minutes_part = total_minutes % 60
 
-    return f"{h}h {m}m"
+    return (
+        f"{hours_part}h "
+        f"{minutes_part}m"
+    )
 
 
 # =========================================================
-# CSV
+# EXPORT CSV
 # =========================================================
 
-def export_csv(records, filename):
+def export_csv(
+    records,
+    filename
+):
 
     with open(
         filename,
@@ -66,7 +77,6 @@ def export_csv(records, filename):
         writer.writerow([
             "Student ID",
             "Name",
-            "Gender",
             "Check In",
             "Check Out",
             "Status",
@@ -75,252 +85,158 @@ def export_csv(records, filename):
 
         for attendance, student in records:
 
-            check_in = ""
-
-            if attendance.check_in_time:
-                check_in = attendance.check_in_time.strftime(
-                    "%d/%m/%Y %I:%M:%S %p"
-                )
-
-            check_out = ""
-
-            if attendance.check_out_time:
-                check_out = attendance.check_out_time.strftime(
-                    "%d/%m/%Y %I:%M:%S %p"
-                )
-
             hours = calculate_hours(
                 attendance.check_in_time,
                 attendance.check_out_time
             )
 
+            check_in = (
+                attendance.check_in_time.strftime(
+                    "%d/%m/%Y %I:%M:%S %p"
+                )
+                if attendance.check_in_time
+                else "-"
+            )
+
+            check_out = (
+                attendance.check_out_time.strftime(
+                    "%d/%m/%Y %I:%M:%S %p"
+                )
+                if attendance.check_out_time
+                else "-"
+            )
+
             writer.writerow([
                 student.student_id,
                 student.name,
-                student.gender or "",
                 check_in,
                 check_out,
-                attendance.status or "",
+                attendance.status,
                 format_hours(hours)
             ])
 
-    return os.path.abspath(filename)
-
 
 # =========================================================
-# PDF
+# EXPORT PDF
 # =========================================================
 
 def export_pdf(
     records,
-    filename,
-    title="Student Attendance Report"
+    filename
 ):
 
     document = SimpleDocTemplate(
         filename,
-        pagesize=landscape(A4),
-        rightMargin=8 * mm,
-        leftMargin=8 * mm,
-        topMargin=10 * mm,
-        bottomMargin=10 * mm
+        pagesize=A4,
+        rightMargin=25,
+        leftMargin=25,
+        topMargin=30,
+        bottomMargin=30
     )
 
     styles = getSampleStyleSheet()
 
-    story = []
+    elements = []
 
-    story.append(
+    elements.append(
         Paragraph(
-            title,
+            "Student Attendance Report",
             styles["Title"]
         )
     )
 
-    story.append(
-        Spacer(1, 8)
-    )
-
-    generated = datetime.now().strftime(
-        "%d/%m/%Y %I:%M:%S %p"
-    )
-
-    story.append(
-        Paragraph(
-            f"Generated: {generated}",
-            styles["Normal"]
-        )
-    )
-
-    story.append(
-        Spacer(1, 12)
+    elements.append(
+        Spacer(1, 15)
     )
 
     data = [[
         "Student ID",
         "Name",
-        "Gender",
         "Check In",
         "Check Out",
         "Status",
-        "Total Hours"
+        "Hours"
     ]]
 
-    grand_total = 0
-
     for attendance, student in records:
-
-        check_in = ""
-
-        if attendance.check_in_time:
-            check_in = attendance.check_in_time.strftime(
-                "%d/%m/%Y %I:%M %p"
-            )
-
-        check_out = "-"
-
-        if attendance.check_out_time:
-            check_out = attendance.check_out_time.strftime(
-                "%I:%M %p"
-            )
 
         hours = calculate_hours(
             attendance.check_in_time,
             attendance.check_out_time
         )
 
-        grand_total += hours
+        check_in = (
+            attendance.check_in_time.strftime(
+                "%d/%m/%Y %H:%M"
+            )
+            if attendance.check_in_time
+            else "-"
+        )
+
+        check_out = (
+            attendance.check_out_time.strftime(
+                "%d/%m/%Y %H:%M"
+            )
+            if attendance.check_out_time
+            else "-"
+        )
 
         data.append([
             student.student_id,
             student.name,
-            student.gender or "",
             check_in,
             check_out,
-            attendance.status or "",
+            attendance.status,
             format_hours(hours)
         ])
 
-    data.append([
-        "",
-        "",
-        "",
-        "",
-        "",
-        "GRAND TOTAL",
-        format_hours(grand_total)
-    ])
-
     table = Table(
         data,
-        repeatRows=1,
-        colWidths=[
-            30 * mm,
-            45 * mm,
-            25 * mm,
-            43 * mm,
-            35 * mm,
-            30 * mm,
-            30 * mm
-        ]
+        repeatRows=1
     )
 
     table.setStyle(
         TableStyle([
-
             (
                 "BACKGROUND",
                 (0, 0),
                 (-1, 0),
-                colors.grey
+                colors.HexColor("#2563eb")
             ),
-
             (
                 "TEXTCOLOR",
                 (0, 0),
                 (-1, 0),
                 colors.white
             ),
-
+            (
+                "GRID",
+                (0, 0),
+                (-1, -1),
+                0.5,
+                colors.grey
+            ),
             (
                 "FONTNAME",
                 (0, 0),
                 (-1, 0),
                 "Helvetica-Bold"
             ),
-
-            (
-                "ALIGN",
-                (0, 0),
-                (-1, -1),
-                "CENTER"
-            ),
-
             (
                 "VALIGN",
                 (0, 0),
                 (-1, -1),
                 "MIDDLE"
             ),
-
-            (
-                "GRID",
-                (0, 0),
-                (-1, -1),
-                0.5,
-                colors.black
-            ),
-
-            (
-                "ROWBACKGROUNDS",
-                (0, 1),
-                (-1, -2),
-                [
-                    colors.white,
-                    colors.lightgrey
-                ]
-            ),
-
-            (
-                "BACKGROUND",
-                (0, -1),
-                (-1, -1),
-                colors.lightgrey
-            ),
-
-            (
-                "FONTNAME",
-                (0, -1),
-                (-1, -1),
-                "Helvetica-Bold"
-            ),
-
             (
                 "FONTSIZE",
                 (0, 0),
                 (-1, -1),
                 8
             ),
-
-            (
-                "TOPPADDING",
-                (0, 0),
-                (-1, -1),
-                6
-            ),
-
-            (
-                "BOTTOMPADDING",
-                (0, 0),
-                (-1, -1),
-                6
-            )
-
         ])
     )
 
-    story.append(table)
+    elements.append(table)
 
-    document.build(story)
-
-    return os.path.abspath(filename)
+    document.build(elements)
