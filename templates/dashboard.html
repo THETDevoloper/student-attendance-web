@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>
+    🏠 Dashboard
+</h1>
+
+<p class="subtitle">
+    Manage students and attendance easily
+</p>
+
+
+<div class="cards">
+
+    <div class="card">
+
+        <div class="card-icon">
+            👨‍🎓
+        </div>
+
+        <div>
+            Students
+        </div>
+
+        <strong>
+            {{ student_count }}
+        </strong>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="card-icon">
+            ✅
+        </div>
+
+        <div>
+            Check Ins Today
+        </div>
+
+        <strong>
+            {{ attendance_count }}
+        </strong>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="card-icon">
+            🚪
+        </div>
+
+        <div>
+            Checked Out
+        </div>
+
+        <strong>
+            {{ checkout_count }}
+        </strong>
+
+    </div>
+
+</div>
+
+
+<div class="quick-actions">
+
+    <a
+        href="{{ url_for('checkin') }}"
+        class="big-button"
+    >
+        ✅ Check In
+    </a>
+
+    <a
+        href="{{ url_for('checkout') }}"
+        class="big-button"
+    >
+        🚪 Check Out
+    </a>
+
+    <a
+        href="{{ url_for('reports') }}"
+        class="big-button"
+    >
+        📊 Reports
+    </a>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>
+    📊 Attendance Reports
+</h1>
+
+
+<!-- =====================================================
+FILTER
+===================================================== -->
+
+<div class="filter-card">
+
+<form method="GET">
+
+    <div>
+
+        <label>
+            👨‍🎓 Student
+        </label>
+
+        <input
+            name="student"
+            value="{{ search }}"
+            placeholder="ID / Name"
+        >
+
+    </div>
+
+
+    <div>
+
+        <label>
+            📅 From
+        </label>
+
+        <input
+            name="from_date"
+            value="{{ from_date }}"
+            placeholder="DD/MM/YYYY"
+        >
+
+    </div>
+
+
+    <div>
+
+        <label>
+            📅 To
+        </label>
+
+        <input
+            name="to_date"
+            value="{{ to_date }}"
+            placeholder="DD/MM/YYYY"
+        >
+
+    </div>
+
+
+    <div>
+
+        <label>
+            Status
+        </label>
+
+        <select name="status">
+
+            <option
+                value="All"
+                {% if selected_status == "All" %}
+                selected
+                {% endif %}
+            >
+                All
+            </option>
+
+            <option
+                value="Present"
+                {% if selected_status == "Present" %}
+                selected
+                {% endif %}
+            >
+                Present
+            </option>
+
+            <option
+                value="Completed"
+                {% if selected_status == "Completed" %}
+                selected
+                {% endif %}
+            >
+                Completed
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <button
+        type="submit"
+        class="primary-button"
+    >
+        🔎 Apply Filter
+    </button>
+
+
+    <a
+        href="{{ url_for('reports') }}"
+        class="clear-button"
+    >
+        ❌ Clear
+    </a>
+
+</form>
+
+</div>
+
+
+<!-- =====================================================
+SUMMARY
+===================================================== -->
+
+<div class="summary">
+
+    <div>
+        Records:
+        <strong>
+            {{ records|length }}
+        </strong>
+    </div>
+
+    <div>
+        🕐 Grand Total:
+        <strong>
+            {{ format_hours(grand_total) }}
+        </strong>
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+EXPORT
+===================================================== -->
+
+<div class="export-buttons">
+
+    <a
+        href="{{ url_for(
+            'reports_pdf',
+            student=search,
+            from_date=from_date,
+            to_date=to_date,
+            status=selected_status
+        ) }}"
+        class="pdf-button"
+    >
+        📄 Export PDF
+    </a>
+
+
+    <a
+        href="{{ url_for(
+            'reports_csv',
+            student=search,
+            from_date=from_date,
+            to_date=to_date,
+            status=selected_status
+        ) }}"
+        class="csv-button"
+    >
+        📊 Export CSV
+    </a>
+
+</div>
+
+
+<!-- =====================================================
+RECORD TABLE
+===================================================== -->
+
+<div class="table-wrapper">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>
+Student ID
+</th>
+
+<th>
+Name
+</th>
+
+<th>
+Gender
+</th>
+
+<th>
+Check In
+</th>
+
+<th>
+Check Out
+</th>
+
+<th>
+Status
+</th>
+
+<th>
+Hours
+</th>
+
+</tr>
+
+</thead>
+
+
+<tbody>
+
+{% for attendance, student in records %}
+
+<tr>
+
+<td>
+{{ student.student_id }}
+</td>
+
+<td>
+{{ student.name }}
+</td>
+
+<td>
+{{ student.gender or "-" }}
+</td>
+
+<td>
+
+{{ attendance.check_in_time.strftime(
+    "%d/%m/%Y %I:%M %p"
+) }}
+
+</td>
+
+<td>
+
+{% if attendance.check_out_time %}
+
+{{ attendance.check_out_time.strftime(
+    "%I:%M %p"
+) }}
+
+{% else %}
+
+-
+
+{% endif %}
+
+</td>
+
+<td>
+
+{% if attendance.status == "Completed" %}
+
+<span class="badge completed">
+✔️ Completed
+</span>
+
+{% else %}
+
+<span class="badge present">
+✅ Present
+</span>
+
+{% endif %}
+
+</td>
+
+<td>
+
+{{ format_hours(
+    calculate_hours(
+        attendance.check_in_time,
+        attendance.check_out_time
+    )
+) }}
+
+</td>
+
+</tr>
+
+{% else %}
+
+<tr>
+
+<td
+    colspan="7"
+    class="empty"
+>
+No attendance records found.
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+
+<!-- =====================================================
+TOTAL HOURS PER STUDENT
+===================================================== -->
+
+<h2 class="section-title">
+    🕐 Total Hours per Student
+</h2>
+
+
+<div class="table-wrapper">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>
+Student ID
+</th>
+
+<th>
+Name
+</th>
+
+<th>
+Total Hours
+</th>
+
+</tr>
+
+</thead>
+
+
+<tbody>
+
+{% for student in student_totals.values() %}
+
+<tr>
+
+<td>
+{{ student.student_id }}
+</td>
+
+<td>
+{{ student.name }}
+</td>
+
+<td>
+<strong>
+{{ format_hours(student.hours) }}
+</strong>
+</td>
+
+</tr>
+
+{% else %}
+
+<tr>
+
+<td
+    colspan="3"
+    class="empty"
+>
+No data.
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% endblock %}

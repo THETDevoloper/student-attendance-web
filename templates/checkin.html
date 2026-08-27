@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="center-card">
+
+    <h1>
+        ✅ Student Check In
+    </h1>
+
+    {% if not students %}
+
+        <div class="empty">
+            No students found.
+            Please add a student first.
+        </div>
+
+    {% else %}
+
+    <form
+        method="POST"
+        class="attendance-form"
+    >
+
+        <label>
+            Select Student
+        </label>
+
+        <select
+            name="student_id"
+            required
+        >
+
+            {% for student in students %}
+
+            <option value="{{ student.id }}">
+
+                {{ student.student_id }}
+                -
+                {{ student.name }}
+
+            </option>
+
+            {% endfor %}
+
+        </select>
+
+
+        <div
+            id="clock"
+            class="clock"
+        ></div>
+
+
+        <button
+            type="submit"
+            class="success-button large"
+        >
+            ✅ CHECK IN
+        </button>
+
+    </form>
+
+    {% endif %}
+
+</div>
+
+
+<script>
+
+function updateClock() {
+
+    const now = new Date();
+
+    document.getElementById(
+        "clock"
+    ).innerText = now.toLocaleString();
+
+}
+
+updateClock();
+
+setInterval(
+    updateClock,
+    1000
+);
+
+</script>
+
+{% endblock %}
